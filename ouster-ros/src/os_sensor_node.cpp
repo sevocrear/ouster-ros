@@ -88,6 +88,8 @@ LifecycleNodeInterface::CallbackReturn OusterSensor::on_activate(
         update_config_and_metadata(*sensor_client);
     create_publishers();
     allocate_buffers();
+    if (imu_packet_pub) imu_packet_pub->on_activate();
+    if (lidar_packet_pub) lidar_packet_pub->on_activate();
     start_packet_processing_threads();
     start_sensor_connection_thread();
     return LifecycleNodeInterface::CallbackReturn::SUCCESS;

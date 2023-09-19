@@ -39,6 +39,20 @@ class OusterDriver : public OusterSensor {
         declare_parameter("point_type", "default");
     }
 
+
+    LifecycleNodeInterface::CallbackReturn on_activate(
+        const rclcpp_lifecycle::State& state) {
+        RCLCPP_DEBUG(get_logger(), "os_driver::on_activate() is called.");
+        auto cb_return = OusterSensor::on_activate(state);
+        if (cb_return != LifecycleNodeInterface::CallbackReturn::SUCCESS)
+            return cb_return;
+        if (imu_pub) imu_pub->on_activate();
+        for (auto& p : lidar_pubs) p->on_activate();
+        for (auto& p : scan_pubs) p->on_activate();
+        for (auto& p : image_pubs) p.second->on_activate();
+        return LifecycleNodeInterface::CallbackReturn::SUCCESS;
+    }
+
     virtual void on_metadata_updated(const sensor::sensor_info& info) override {
         OusterSensor::on_metadata_updated(info);
         tf_bcast.broadcast_transforms(info);
@@ -96,7 +110,19 @@ class OusterDriver : public OusterSensor {
                         for (size_t i = 0; i < msgs.size(); ++i)
                             lidar_pubs[i]->publish(*msgs[i]);
                     }));
-            } else {
+            
+            } 
+            else if (point_type == "xyzirt") {
+                processors.push_back(
+                    PointCloudProcessor<ouster_ros::PointXYZIRT>::create(
+                    info, tf_bcast.point_cloud_frame_id(),
+                    tf_bcast.apply_lidar_to_sensor_transform(),
+                    [this](PointCloudProcessor<ouster_ros::PointXYZIRT>::OutputType msgs) {
+                        for (size_t i = 0; i < msgs.size(); ++i)
+                            lidar_pubs[i]->publish(*msgs[i]);
+                    }));
+            } 
+            else {
                 RCLCPP_WARN_STREAM(get_logger(),
                     "Un-supported point type used: " << point_type);
             }
@@ -196,13 +222,13 @@ class OusterDriver : public OusterSensor {
    private:
     OusterStaticTransformsBroadcaster<rclcpp_lifecycle::LifecycleNode> tf_bcast;
 
-    rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub;
-    std::vector<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr>
+    rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub;
+    std::vector<rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::PointCloud2>::SharedPtr>
         lidar_pubs;
-    std::vector<rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr>
+    std::vector<rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::LaserScan>::SharedPtr>
         scan_pubs;
     std::map<sensor::ChanField,
-             rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr>
+             rclcpp_lifecycle::LifecyclePublisher<sensor_msgs::msg::Image>::SharedPtr>
         image_pubs;
     ImuPacketHandler::HandlerType imu_packet_handler;
     LidarPacketHandler::HandlerType lidar_packet_handler;

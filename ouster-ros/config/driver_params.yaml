@@ -2,7 +2,7 @@ ouster/os_driver:
   ros__parameters:
     # sensor_hostname[required]: hostname or IP address of the sensor (IP4 or
     # IP6).
-    sensor_hostname: ''
+    sensor_hostname: '192.168.89.2'
     # udp_dest[optional]: hostname or multicast group IP where the sensor will
     # send UDP data packets.
     udp_dest: ''
@@ -25,7 +25,7 @@ ouster/os_driver:
     # - TIME_FROM_ROS_TIME: This option uses the time of reception of first
     #                       packet of a LidarScan as the timestamp of the IMU,
     #                       PointCloud2 and LaserScan messages.
-    timestamp_mode: ''
+    timestamp_mode: 'TIME_FROM_ROS_TIME'
     # ptp_utc_tai_offset[optional]: UTC/TAI offset in seconds to apply when
     # TIME_FROM_PTP_1588 timestamp mode is used.
     ptp_utc_tai_offset: -37.0
@@ -58,7 +58,7 @@ ouster/os_driver:
     point_cloud_frame: os_lidar 
     # proc_mask[optional]: use any combination of the 4 flags IMG, PCL, IMU and
     # SCAN to enable or disable their respective messages.
-    proc_mask: IMG|PCL|IMU|SCAN
+    proc_mask: PCL
     # scan_ring[optional]: use this parameter in conjunction with the SCAN flag
     # to select which beam of the LidarScan to use when producing the LaserScan
     # message. Choose a value the range [0, sensor_beams_count).
@@ -70,4 +70,4 @@ ouster/os_driver:
      # point_type[optional]: choose from: {default, xyzir}
      # for more details about the fields of each point type and their data refer
      # to ouster_ros/os_point.h header.
-    point_type: default
+    point_type: xyzirt

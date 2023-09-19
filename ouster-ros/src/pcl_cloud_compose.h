@@ -20,6 +20,7 @@ namespace sensor = ouster::sensor;
 template <class T>
 using Cloud = pcl::PointCloud<T>;
 
+// XYZIRTRNSERBLA-BLA type
 // TODO: describe or hide
 template <typename PointT, typename RangeT, typename ReflectivityT,
           typename NearIrT, typename SignalT>
@@ -59,6 +60,7 @@ void copy_scan_to_cloud_destaggered(
     }
 }
 
+// XYZIR Type
 // TODO: describe or hide
 template <typename PointT, typename RangeT, typename ReflectivityT,
           typename NearIrT, typename SignalT>
@@ -82,14 +84,50 @@ void copy_scan_to_cloud_destaggered(
             const auto xyz = points.row(src_idx);
             cloud.points[tgt_idx] = ouster_ros::PointXYZIR{
                 {static_cast<float>(xyz(0)), static_cast<float>(xyz(1)),
-                 static_cast<float>(xyz(2)), 1.0f},
-                static_cast<float>(sg[src_idx]),
-                static_cast<uint16_t>(u)
+                 static_cast<float>(xyz(2)), 1.0f}, // xyz
+                static_cast<float>(sg[src_idx]), // instensity
+                static_cast<uint16_t>(u) // reflectivity
             };
         }
     }
 }
 
+// XYZIRT type
+// TODO: describe or hide
+template <typename PointT, typename RangeT, typename ReflectivityT,
+          typename NearIrT, typename SignalT>
+void copy_scan_to_cloud_destaggered(
+    ouster_ros::Cloud<PointXYZIRT>& cloud, const ouster::LidarScan& ls, uint64_t scan_ts,
+    const PointT& points, const ouster::img_t<RangeT>& range,
+    const ouster::img_t<ReflectivityT>& reflectivity,
+    const ouster::img_t<NearIrT>& near_ir, const ouster::img_t<SignalT>& signal,
+    const std::vector<int>& pixel_shift_by_row) {
+    auto timestamp = ls.timestamp();
+    const auto rg = range.data();
+    const auto rf = reflectivity.data();
+    const auto nr = near_ir.data();
+    const auto sg = signal.data();
+
+#ifdef __OUSTER_UTILIZE_OPENMP__
+#pragma omp parallel for collapse(2)
+#endif
+    for (auto u = 0; u < ls.h; u++) {
+        for (auto v = 0; v < ls.w; v++) {
+            const auto v_shift = (v + ls.w - pixel_shift_by_row[u]) % ls.w;
+            auto ts = timestamp[v_shift]; ts = ts > scan_ts ? ts - scan_ts : 0UL;
+            const auto src_idx = u * ls.w + v_shift;
+            const auto tgt_idx = u * ls.w + v;
+            const auto xyz = points.row(src_idx);
+            cloud.points[tgt_idx] = ouster_ros::PointXYZIRT{
+                {static_cast<float>(xyz(0)), static_cast<float>(xyz(1)),
+                 static_cast<float>(xyz(2)), 1.0f}, // xyz
+                static_cast<float>(sg[src_idx]), // intensity
+                static_cast<uint16_t>(u), // reflectivity
+                static_cast<uint32_t>(ts), // time
+            };
+        }
+    }
+}
 /**
  * Populate a destaggered PCL point cloud from a LidarScan
  * @param[out] cloud output pcl pointcloud to populate

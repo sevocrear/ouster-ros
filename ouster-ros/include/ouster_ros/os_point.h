@@ -33,8 +33,15 @@ struct EIGEN_ALIGN16 PointXYZIR {
     float intensity;
     uint16_t ring;
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-};
+} EIGEN_ALIGN16;
 
+struct EIGEN_ALIGN16 PointXYZIRT {
+    PCL_ADD_POINT4D;
+    float intensity;
+    uint16_t ring;
+    float time;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+} ;
 }  // namespace ouster_ros
 
 // clang-format off
@@ -57,6 +64,15 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::PointXYZIR,
     (float, z, z)
     (float, intensity, intensity)
     (std::uint16_t, ring, ring)
+)
+
+POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::PointXYZIRT,
+    (float, x, x)
+    (float, y, y)
+    (float, z, z)
+    (float, intensity, intensity)
+    (std::uint16_t, ring, ring)
+    (float, time, time)
 )
 
 // clang-format on
